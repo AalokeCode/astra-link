@@ -1,0 +1,51 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+.npmrc
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials*
+service-account*.json
+google-services.json
+secrets/
+config/cloudflared.yml
+config/*.json
+
+# Runtime state
+logs/
+*.db
+*.db-wal
+*.db-shm
+.model_cache.json
+
+# Build artifacts
+.venv/
+bin/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+node_modules
+.next/
+web/out/
+next-env.d.ts
+native/STTHelper/.build/
+.gradle/
+.idea/
+local.properties
+*.apk
+*.aab
+
+# macOS
+.DS_Store
+
+# Local agent/workspace context — contains machine-specific paths and notes
+.ai-workflow/
+.impeccable.md
+Claude AI Assistant Specification.md

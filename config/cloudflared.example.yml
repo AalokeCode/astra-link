@@ -1,0 +1,8 @@
+# Copy to cloudflared.yml. That local file and your tunnel credential are ignored.
+tunnel: REPLACE_WITH_TUNNEL_UUID
+credentials-file: /Users/REPLACE_ME/.cloudflared/REPLACE_WITH_TUNNEL_UUID.json
+
+ingress:
+  - hostname: astra.example.com
+    service: http://127.0.0.1:8080
+  - service: http_status:404

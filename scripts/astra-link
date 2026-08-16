@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+PYTHON_BIN="${REPO_ROOT}/.venv/bin/python"
+
+usage() {
+    cat <<'EOF'
+Usage: ./scripts/astra-link <command>
+
+Commands:
+  setup         Create the Python environment and install web dependencies
+  build         Export the installable web app to web/out
+  serve         Serve the web app and Gemini Live gateway on localhost:8080
+  quick-tunnel  Create a temporary public trycloudflare.com URL
+  tunnel        Run the configured named Cloudflare Tunnel
+  status        Check the local gateway health
+EOF
+}
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || {
+        echo "error: $1 is not installed or not on PATH" >&2
+        exit 1
+    }
+}
+
+setup() {
+    require_command python3
+    require_command npm
+    if [[ ! -d "${REPO_ROOT}/.venv" ]]; then
+        python3 -m venv "${REPO_ROOT}/.venv"
+    fi
+    "${REPO_ROOT}/.venv/bin/pip" install -e "${REPO_ROOT}[dev]"
+    npm --prefix "${REPO_ROOT}/web" ci
+    if [[ ! -f "${REPO_ROOT}/.env" ]]; then
+        cp "${REPO_ROOT}/.env.example" "${REPO_ROOT}/.env"
+        echo "Created .env. Add GEMINI_API_KEY and LINK_SESSION_TOKEN before serving."
+    fi
+}
+
+build() {
+    require_command npm
+    if [[ ! -d "${REPO_ROOT}/web/node_modules" ]]; then
+        echo "error: web dependencies are missing; run ./scripts/astra-link setup" >&2
+        exit 1
+    fi
+    npm --prefix "${REPO_ROOT}/web" run build
+}
+
+serve() {
+    if [[ ! -x "$PYTHON_BIN" || ! -f "${REPO_ROOT}/.env" ]]; then
+        echo "error: setup or .env is missing; see README.md" >&2
+        exit 1
+    fi
+    if [[ ! -f "${REPO_ROOT}/web/out/index.html" ]]; then
+        build
+    fi
+    cd "$REPO_ROOT"
+    exec "$PYTHON_BIN" -m app.main --serve
+}
+
+quick_tunnel() {
+    require_command cloudflared
+    exec cloudflared tunnel --url http://127.0.0.1:8080
+}
+
+named_tunnel() {
+    require_command cloudflared
+    if [[ ! -f "${REPO_ROOT}/config/cloudflared.yml" ]]; then
+        echo "error: copy config/cloudflared.example.yml to config/cloudflared.yml and configure it" >&2
+        exit 1
+    fi
+    exec cloudflared tunnel --config "${REPO_ROOT}/config/cloudflared.yml" run
+}
+
+case "${1:-}" in
+    setup) setup ;;
+    build) build ;;
+    serve) serve ;;
+    quick-tunnel) quick_tunnel ;;
+    tunnel) named_tunnel ;;
+    status) curl --fail --silent --show-error http://127.0.0.1:8080/health ; echo ;;
+    help|-h|--help) usage ;;
+    *) usage >&2; exit 2 ;;
+esac

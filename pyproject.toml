@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "astra-link"
+version = "0.1.0"
+description = "ASTRA Link — tunnel-native Gemini Live personal assistant PWA"
+requires-python = ">=3.12,<3.15"
+
+# Ultralight profile: three runtime dependencies, everything else is stdlib.
+#   aiohttp  - single-origin PWA/WebSocket server and Gemini Live client
+#   httpx    - async HTTP for the Gemini/Groq REST APIs and web tools
+#   pydantic - tool argument validation + JSON Schema generation (the security
+#              boundary between the model and the filesystem)
+# Deliberately NOT used: google-genai, groq, reportlab, python-docx, ddgs,
+# rich, prompt-toolkit. See docs/ for the rationale and native replacements.
+dependencies = [
+    "aiohttp>=3.10",
+    "httpx>=0.27",
+    "pydantic>=2.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+astra-link = "app.main:main"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

@@ -123,3 +123,5 @@ npm --prefix web run build
 ```
 
 See [transport options](docs/voice-options.md) for the network tradeoffs.
+For complete removal from Android, Chrome, macOS, Cloudflare, and GitHub, see
+[uninstalling ASTRA Link](docs/uninstall.md).

@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import contextlib
+import hashlib
 import hmac
 import json
 import logging
+import re
 from collections.abc import Mapping
 from dataclasses import asdict
 from pathlib import Path
@@ -23,6 +26,30 @@ log = logging.getLogger(__name__)
 
 LINK_INPUT_SAMPLE_RATE = 16_000
 AUTH_TIMEOUT_SECONDS = 10
+CSP_KEY = web.AppKey("content_security_policy", str)
+
+
+def build_content_security_policy(index_path: Path) -> str:
+    """Allow only the exact inline bootstrap scripts emitted by Next.js."""
+    hashes: list[str] = []
+    try:
+        markup = index_path.read_text(encoding="utf-8")
+    except OSError:
+        markup = ""
+    for script in re.findall(
+        r"<script(?![^>]*\bsrc\s*=)[^>]*>(.*?)</script>",
+        markup,
+        flags=re.IGNORECASE | re.DOTALL,
+    ):
+        digest = hashlib.sha256(script.encode("utf-8")).digest()
+        hashes.append(f"'sha256-{base64.b64encode(digest).decode('ascii')}'")
+    script_sources = " ".join(["'self'", *hashes])
+    return (
+        f"default-src 'self'; script-src {script_sources}; "
+        "style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:; "
+        "img-src 'self' data:; media-src 'self' blob:; worker-src 'self'; "
+        "object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    )
 
 
 def parse_auth_message(raw: str) -> str:
@@ -80,12 +107,7 @@ async def security_headers(
         response.headers.setdefault("Referrer-Policy", "no-referrer")
         response.headers.setdefault("Permissions-Policy", "camera=(), geolocation=()")
         response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
-        response.headers.setdefault(
-            "Content-Security-Policy",
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-            "connect-src 'self' ws: wss:; img-src 'self' data:; media-src 'self' blob:; "
-            "worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
-        )
+        response.headers.setdefault("Content-Security-Policy", request.app[CSP_KEY])
     return response
 
 
@@ -121,6 +143,9 @@ class LinkGateway:
         app = web.Application(
             client_max_size=2 * 1024 * 1024,
             middlewares=[security_headers],
+        )
+        app[CSP_KEY] = build_content_security_policy(
+            self._cfg.web_dist_dir / "index.html"
         )
         app.router.add_get("/v1/live", self._live)
         app.router.add_get("/health", self._health)
@@ -269,6 +294,7 @@ __all__ = [
     "AUTH_TIMEOUT_SECONDS",
     "LINK_INPUT_SAMPLE_RATE",
     "LinkGateway",
+    "build_content_security_policy",
     "parse_auth_message",
     "safe_static_path",
 ]

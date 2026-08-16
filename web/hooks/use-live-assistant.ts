@@ -12,8 +12,6 @@ export type AssistantState =
 
 export type Turn = { id: number; input: string; output: string }
 
-const PLAYBACK_LEAD_SECONDS = 0.06
-
 type LiveMessage = {
   type: string
   state?: AssistantState
@@ -32,36 +30,15 @@ export function useLiveAssistant() {
   const socketRef = useRef<WebSocket | null>(null)
   const contextRef = useRef<AudioContext | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const sourcesRef = useRef(new Set<AudioBufferSourceNode>())
-  const nextPlaybackRef = useRef(0)
+  const playbackRef = useRef<AudioWorkletNode | null>(null)
 
   const clearPlayback = useCallback(() => {
-    for (const source of sourcesRef.current) {
-      try {
-        source.stop()
-      } catch {
-        // Already stopped.
-      }
-    }
-    sourcesRef.current.clear()
-    nextPlaybackRef.current = contextRef.current?.currentTime ?? 0
+    playbackRef.current?.port.postMessage({ type: 'clear' })
   }, [])
 
   const playPcm = useCallback((buffer: ArrayBuffer) => {
-    const context = contextRef.current
-    if (!context || buffer.byteLength < 2) return
-    const pcm = new Int16Array(buffer)
-    const audio = context.createBuffer(1, pcm.length, 24_000)
-    const channel = audio.getChannelData(0)
-    for (let i = 0; i < pcm.length; i += 1) channel[i] = pcm[i] / 32768
-    const source = context.createBufferSource()
-    source.buffer = audio
-    source.connect(context.destination)
-    const startAt = Math.max(context.currentTime + PLAYBACK_LEAD_SECONDS, nextPlaybackRef.current)
-    source.start(startAt)
-    nextPlaybackRef.current = startAt + audio.duration
-    sourcesRef.current.add(source)
-    source.onended = () => sourcesRef.current.delete(source)
+    if (buffer.byteLength < 2 || !playbackRef.current) return
+    playbackRef.current.port.postMessage({ type: 'audio', buffer }, [buffer])
   }, [])
 
   const disconnect = useCallback(() => {
@@ -70,6 +47,8 @@ export function useLiveAssistant() {
     streamRef.current?.getTracks().forEach((track) => track.stop())
     streamRef.current = null
     clearPlayback()
+    playbackRef.current?.disconnect()
+    playbackRef.current = null
     void contextRef.current?.close()
     contextRef.current = null
     setState('idle')
@@ -89,7 +68,15 @@ export function useLiveAssistant() {
         const context = new AudioContext({ latencyHint: 'interactive' })
         contextRef.current = context
         await context.audioWorklet.addModule('/pcm-capture-processor.js')
+        await context.audioWorklet.addModule('/pcm-playback-processor.js')
         await context.resume()
+        const playback = new AudioWorkletNode(context, 'pcm-playback-processor', {
+          numberOfInputs: 0,
+          numberOfOutputs: 1,
+          outputChannelCount: [1],
+        })
+        playback.connect(context.destination)
+        playbackRef.current = playback
 
         const socket = new WebSocket(new URL(endpoint))
         socket.binaryType = 'arraybuffer'
@@ -151,6 +138,8 @@ export function useLiveAssistant() {
           if (socketRef.current === socket) {
             socketRef.current = null
             clearPlayback()
+            playback.disconnect()
+            playbackRef.current = null
             void context.close()
             contextRef.current = null
             streamRef.current = null

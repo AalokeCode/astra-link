@@ -235,6 +235,10 @@ async def test_live_voice_excludes_and_rejects_high_risk_tools(tmp_path: Path) -
 
     definitions = assistant.live_tool_definitions()
     assert {item["name"] for item in definitions} == {"get_weather", "search_docs"}
+    prompt = assistant.live_system_prompt()
+    assert "Aaloke is a B.Tech student at Rishihood" in prompt
+    assert "ongoing personal assistant and technical companion" in prompt
+    assert "keep the reply short and speakable" in prompt
 
     result = await assistant.execute_live_tool_calls(
         [ToolCall(id="danger", name="delete_file", arguments={"path": "notes.txt"})],

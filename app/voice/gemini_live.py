@@ -259,7 +259,11 @@ class GeminiLiveSession:
     async def greet(self, prompt: str | None = None) -> None:
         await self.send_text(
             prompt
-            or "The voice session connected. Briefly greet the user as ASTRA and ask how you can help."
+            or (
+                "The voice session connected. Briefly greet Aaloke as ASTRA in a warm, natural "
+                "way. Make it feel like reconnecting with his personal assistant, then ask how "
+                "he is or what he is working on. Vary the wording between sessions."
+            )
         )
 
     async def send_text(self, text: str) -> None:

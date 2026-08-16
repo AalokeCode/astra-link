@@ -1,8 +1,8 @@
 class PcmCaptureProcessor extends AudioWorkletProcessor {
   constructor() {
     super()
-    this.sourceChunkSize = Math.max(128, Math.round(sampleRate * 0.04))
-    this.targetChunkSize = 640
+    this.sourceChunkSize = Math.max(128, Math.round(sampleRate * 0.02))
+    this.targetChunkSize = 320
     this.pending = new Float32Array(this.sourceChunkSize)
     this.pendingLength = 0
   }

@@ -1,5 +1,11 @@
-const CACHE_NAME = 'astra-link-v1'
-const APP_SHELL = ['/', '/manifest.webmanifest', '/icon.svg', '/pcm-capture-processor.js']
+const CACHE_NAME = 'astra-link-v2'
+const APP_SHELL = [
+  '/',
+  '/manifest.webmanifest',
+  '/icon.svg',
+  '/pcm-capture-processor.js',
+  '/pcm-playback-processor.js',
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)))

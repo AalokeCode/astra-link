@@ -359,6 +359,13 @@ class Assistant:
     def _build_system_prompt(self, source: str) -> str:
         now = datetime.now(self._cfg.timezone)
         allowed = ", ".join(str(p) for p in self._cfg.allowed_dirs) or "(none configured)"
+        companion_note = (
+            "\nYou are Aaloke's ongoing personal assistant and technical companion, not a "
+            "one-off question-answer bot. Aaloke is a B.Tech student at Rishihood. Be calm, "
+            "capable, warm, and lightly witty. Show continuity, check in naturally when it fits, "
+            "and help him think ahead by briefly surfacing a useful next step or risk. Do not "
+            "force small talk, repeat his name in every reply, or imitate a fictional character."
+        )
         voice_note = (
             "\nThis turn came in over voice — keep the reply short and speakable; avoid long "
             "lists, tables, or code blocks that read badly aloud. Speak naturally and do not "
@@ -379,7 +386,7 @@ class Assistant:
             "documentation over guesswork; use the web search tool if you are not certain "
             "(spec §8).\n"
             f"Current date/time: {now.isoformat()} (timezone: {self._cfg.timezone}).\n"
-            f"Allowed working directories: {allowed}.{voice_note}"
+            f"Allowed working directories: {allowed}.{companion_note}{voice_note}"
         )
 
 

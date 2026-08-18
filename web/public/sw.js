@@ -1,4 +1,4 @@
-const CACHE_NAME = 'astra-link-v2'
+const CACHE_NAME = 'astra-link-v3'
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -24,7 +24,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request
   const url = new URL(request.url)
-  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname === '/health') {
+  if (
+    request.method !== 'GET' ||
+    url.origin !== self.location.origin ||
+    url.pathname === '/health' ||
+    url.pathname.startsWith('/agents/')
+  ) {
     return
   }
 
@@ -37,6 +42,25 @@ self.addEventListener('fetch', (event) => {
           return response
         })
         .catch(() => caches.match('/')),
+    )
+    return
+  }
+
+  if (
+    url.pathname === '/pcm-capture-processor.js' ||
+    url.pathname === '/pcm-playback-processor.js' ||
+    url.pathname === '/manifest.webmanifest'
+  ) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone()
+            void caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
+          }
+          return response
+        })
+        .catch(() => caches.match(request)),
     )
     return
   }

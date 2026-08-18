@@ -55,7 +55,8 @@ record. For a named Cloudflare Tunnel:
    matching tunnel credential JSON from `~/.cloudflared`.
 
 If Tailscale was used instead, inspect `tailscale serve status`, then disable
-the applicable route with `tailscale serve off` or `tailscale funnel off`.
+the applicable route with `./scripts/astra-link tailscale-off` (or
+`tailscale funnel off` if Funnel was configured separately).
 
 ## 4. Remove Mac data and source
 

@@ -1,8 +1,10 @@
 class PcmCaptureProcessor extends AudioWorkletProcessor {
   constructor() {
     super()
-    this.sourceChunkSize = Math.max(128, Math.round(sampleRate * 0.02))
-    this.targetChunkSize = 320
+    // Forty millisecond frames cut tunnel/WebSocket message overhead in half
+    // while keeping enough granularity for natural interruption detection.
+    this.sourceChunkSize = Math.max(128, Math.round(sampleRate * 0.04))
+    this.targetChunkSize = 640
     this.pending = new Float32Array(this.sourceChunkSize)
     this.pendingLength = 0
   }

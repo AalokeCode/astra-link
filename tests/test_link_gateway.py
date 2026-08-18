@@ -2,14 +2,58 @@ from __future__ import annotations
 
 import json
 import re
+from types import SimpleNamespace
 
 import pytest
+from aiohttp import web
+from aiohttp.test_utils import make_mocked_request
 
 from app.voice.link_gateway import (
+    CONFIG_KEY,
+    CSP_KEY,
     build_content_security_policy,
+    origin_allowed,
     parse_auth_message,
     safe_static_path,
+    security_headers,
 )
+
+
+def test_origin_allowlist_includes_configured_public_url():
+    cfg = SimpleNamespace(
+        link_allowed_origins=["http://localhost:3000/"],
+        link_public_url="https://astra.example.test",
+    )
+
+    assert origin_allowed(cfg, "")
+    assert origin_allowed(cfg, "http://localhost:3000")
+    assert origin_allowed(cfg, "https://astra.example.test/")
+    assert not origin_allowed(cfg, "https://attacker.example")
+
+
+async def test_agent_auth_errors_keep_cors_headers():
+    cfg = SimpleNamespace(
+        link_allowed_origins=["http://localhost:3000"],
+        link_public_url="",
+    )
+    app = web.Application()
+    app[CONFIG_KEY] = cfg
+    app[CSP_KEY] = "default-src 'self'"
+    request = make_mocked_request(
+        "GET",
+        "/agents/status",
+        headers={"Origin": "http://localhost:3000"},
+        app=app,
+    )
+
+    async def unauthorized(_request):
+        raise web.HTTPUnauthorized(text="no")
+
+    response = await security_headers(request, unauthorized)
+
+    assert response.status == 401
+    assert response.headers["Access-Control-Allow-Origin"] == "http://localhost:3000"
+    assert response.headers["Cache-Control"] == "no-store"
 
 
 def test_auth_message_requires_nonempty_token():

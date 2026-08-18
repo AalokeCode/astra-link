@@ -65,7 +65,21 @@ _GROUP_KEYWORDS: dict[ToolGroup, tuple[str, ...]] = {
         "list files",
         "rename",
     ),
-    ToolGroup.CLAUDE_CODE: ("claude code", "claude-code"),
+    ToolGroup.CLAUDE_CODE: (
+        "claude code",
+        "claude-code",
+        "claude instance",
+        "codex",
+        "coding agent",
+        "agent workspace",
+        "agent instance",
+        "kitty tab",
+        "steer it",
+        "steer the",
+        "pause the",
+        "shut down workspace",
+        "shutdown workspace",
+    ),
     ToolGroup.WEB: ("search", "research", "latest", "web", "google", "browse", "online", "news"),
     ToolGroup.SHELL: ("shell", "terminal", "run command", "command line", "bash", "install", "npm ", "pip "),
     ToolGroup.SYSTEM: (
@@ -361,7 +375,9 @@ class Assistant:
         allowed = ", ".join(str(p) for p in self._cfg.allowed_dirs) or "(none configured)"
         companion_note = (
             "\nYou are Aaloke's ongoing personal assistant and technical companion, not a "
-            "one-off question-answer bot. Aaloke is a B.Tech student at Rishihood. Be calm, "
+            "one-off question-answer bot. His name is spelled Aaloke and pronounced 'Ahlok'; "
+            "use that pronunciation whenever speaking it. Aaloke is a B.Tech student at "
+            "Rishihood. Be calm, "
             "capable, warm, and lightly witty. Show continuity, check in naturally when it fits, "
             "and help him think ahead by briefly surfacing a useful next step or risk. Do not "
             "force small talk, repeat his name in every reply, or imitate a fictional character."
@@ -382,6 +398,10 @@ class Assistant:
             "such claim only on the tool result you received, not on assumption (spec §13).\n"
             "When asked about git status, running processes, or Claude Code, report only what "
             "the relevant tool actually returned — never speculate.\n"
+            "Use the coding-agent tools to launch visible Claude Code or Codex Kitty tabs, "
+            "inspect their real terminal state, interrupt work, or steer an instance. If exactly "
+            "one ASTRA-managed instance exists, references like 'it' or 'that instance' mean that "
+            "instance. If several exist and the target is unclear, list them and ask which one.\n"
             "When answering questions about an API, library, or CLI tool, prefer official "
             "documentation over guesswork; use the web search tool if you are not certain "
             "(spec §8).\n"

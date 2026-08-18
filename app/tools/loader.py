@@ -26,6 +26,7 @@ _ALWAYS_ON_MODULES: tuple[str, ...] = (
     "app.tools.filesystem",
     "app.tools.git",
     "app.tools.claude_code",
+    "app.tools.coding_agents",
     "app.tools.system",
     "app.tools.documents",
 )

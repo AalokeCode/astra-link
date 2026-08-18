@@ -16,14 +16,16 @@ Installed PWA / browser
   microphone (PCM16 16 kHz) + text
              │ encrypted WSS
              ▼
-Cloudflare Tunnel (outbound-only connector on the Mac)
+Tailscale Serve (preferred private path) or Cloudflare Tunnel
              │ localhost HTTP/WS
              ▼
 ASTRA Link gateway :8080
   ├─ static Next.js export
   ├─ first-message session authentication
   ├─ conservative daily/concurrent quota guard
-  └─ Gemini Live ↔ ASTRA tools and memory
+  ├─ adaptive PCM transport + live link telemetry
+  ├─ Gemini Live ↔ ASTRA tools and memory
+  └─ authenticated Kitty / Claude Code / Codex workspace API
 ```
 
 The PWA and WebSocket share one origin. No inbound router port, static Mac IP,
@@ -53,8 +55,23 @@ keep the gateway on port 8080.
 
 ## Reach it from anywhere
 
-Cloudflare Tunnel is the recommended public transport because it supports
-WebSockets and the connector makes only outbound connections from the Mac.
+For your own phone, Tailscale Serve is the recommended transport. It keeps the
+app private to your tailnet and can use a direct WireGuard path instead of
+detouring through a public tunnel edge:
+
+```bash
+brew install --cask tailscale
+./scripts/astra-link tailscale
+```
+
+Install/sign in to Tailscale on the phone, then open the HTTPS hostname printed
+by the command. Put that origin in `LINK_PUBLIC_URL` (or
+`LINK_ALLOWED_ORIGINS`) and restart the gateway. Use
+`./scripts/astra-link tailscale-off` to remove the Serve route.
+
+Cloudflare Tunnel remains the recommended public/fallback transport because it
+supports WebSockets and the connector makes only outbound connections from the
+Mac.
 
 For a temporary URL, keep `serve` running and use a second terminal:
 
@@ -87,8 +104,21 @@ Put the returned tunnel UUID, credential path, and hostname into the ignored
 
 Install the PWA from the browser's Add to Home Screen/Install action. The Mac
 must remain awake, online, and running both processes. For private access among
-your own devices, Tailscale Serve is a good alternative; Funnel can publish it
-but has non-configurable bandwidth limits.
+your own devices, prefer Tailscale Serve; use the named Cloudflare route when a
+client cannot join the tailnet.
+
+The Voice surface now uses 40 ms capture frames, adaptive 180–420 ms playback
+buffering, bounded send backlog, a screen wake lock, and visible RTT/underrun
+telemetry. Audio worklets are network-first so an installed PWA does not keep a
+stale audio engine after an update.
+
+## Agent workspace
+
+Choose **Agents** in the same web app to launch visible Claude Code or Codex
+tabs in Kitty, inspect their real terminal, prompt or steer them, pause/focus a
+tab, and shut down ASTRA's dedicated workspace. Agent routes use the same Link
+token and origin allowlist; provider credentials and MCP configuration remain
+on the Mac. See [agent workspace](docs/agent-workspace.md).
 
 ## Security and quota controls
 
@@ -111,6 +141,8 @@ but has non-configurable bandwidth limits.
 ./scripts/astra-link serve
 ./scripts/astra-link quick-tunnel
 ./scripts/astra-link tunnel
+./scripts/astra-link tailscale
+./scripts/astra-link tailscale-off
 ./scripts/astra-link status
 ```
 

@@ -14,6 +14,8 @@ Commands:
   serve         Serve the web app and Gemini Live gateway on localhost:8080
   quick-tunnel  Create a temporary public trycloudflare.com URL
   tunnel        Run the configured named Cloudflare Tunnel
+  tailscale     Publish localhost:8080 privately with Tailscale Serve
+  tailscale-off Disable the Tailscale Serve route
   status        Check the local gateway health
 EOF
 }
@@ -74,12 +76,25 @@ named_tunnel() {
     exec cloudflared tunnel --config "${REPO_ROOT}/config/cloudflared.yml" run
 }
 
+tailscale_serve() {
+    require_command tailscale
+    tailscale serve --bg http://127.0.0.1:8080
+    tailscale serve status
+}
+
+tailscale_off() {
+    require_command tailscale
+    tailscale serve off
+}
+
 case "${1:-}" in
     setup) setup ;;
     build) build ;;
     serve) serve ;;
     quick-tunnel) quick_tunnel ;;
     tunnel) named_tunnel ;;
+    tailscale) tailscale_serve ;;
+    tailscale-off) tailscale_off ;;
     status) curl --fail --silent --show-error http://127.0.0.1:8080/health ; echo ;;
     help|-h|--help) usage ;;
     *) usage >&2; exit 2 ;;
